@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BlokaChat</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --bg: #070a12;
+        --surface: rgba(15, 23, 42, 0.88);
+        --surface-glass: rgba(15, 23, 42, 0.94);
+        --border: rgba(255, 255, 255, 0.09);
+        --accent: #00f2fe;
+        --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #6b21a8 100%);
+        --accent-glow: rgba(0, 242, 254, 0.35);
+        --wa-green: #25d366;
+        --wa-dark: #075e54;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --danger: #ff3366;
+        --online: #22c55e;
+        --dm-purple: #c084fc;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        position: fixed;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(0, 242, 254, 0.12), transparent 70%);
+        top: -80px;
+        left: -80px;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    body::after {
+        content: '';
+        position: absolute;
+        width: 350px;
+        height: 350px;
+        background: radial-gradient(circle, rgba(107, 33, 168, 0.18), transparent 70%);
+        bottom: -90px;
+        right: -90px;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    #app {
+        width: 100%;
+        height: 100%;
+        max-width: 1150px;
+        display: flex;
+        background: var(--surface);
+        backdrop-filter: blur(28px);
+        -webkit-backdrop-filter: blur(28px);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+        margin: auto;
+    }
+
+    @media (min-width: 768px) {
+        #app {
+            height: 92vh;
+            border-radius: 24px;
+            box-shadow: 0 35px 70px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+    }
+
+    /* --- WhatsApp-Style Floating In-App Banner --- */
+    #notif-toast {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-120%);
+        background: rgba(18, 28, 48, 0.95);
+        border: 1px solid var(--accent);
+        box-shadow: 0 12px 30px rgba(0, 242, 254, 0.25);
+        padding: 10px 18px;
+        border-radius: 30px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 120;
+        transition: transform 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        cursor: pointer;
+        max-width: 90%;
+    }
+
+    #notif-toast.show {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* --- Sidebar --- */
+    #sidebar {
+        width: 310px;
+        height: 100%;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        background: rgba(10, 15, 26, 0.75);
+        z-index: 20;
+        transition: transform 0.25s ease;
+    }
+
+    .sidebar-head {
+        padding: 18px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.4);
+    }
+
+    .brand-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand-logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 12px var(--accent-glow);
+        object-fit: cover;
+        background: #000;
+    }
+
+    .brand-title {
+        font-size: 1.28rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        background: var(--accent-grad);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.1;
+    }
+
+    .brand-sub {
+        font-size: 0.68rem;
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .head-btn {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .head-btn:hover {
+        background: rgba(255,255,255,0.12);
+        color: var(--accent);
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: var(--muted);
+        font-weight: 700;
+        margin: 14px 14px 6px;
+    }
+
+    #chat-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px 12px;
+    }
+
+    .chat-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 5px;
+        border: 1px solid transparent;
+    }
+
+    .chat-item:hover { background: rgba(255,255,255,0.04); }
+    .chat-item.active {
+        background: rgba(0, 242, 254, 0.12);
+        border-color: rgba(0, 242, 254, 0.3);
+    }
+
+    .avatar-wrap {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    /* Sidebar Footer Credits */
+    .sidebar-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--border);
+        font-size: 0.72rem;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(10, 15, 26, 0.5);
+    }
+
+    .sidebar-footer b {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    /* --- Main Chat Workspace --- */
+    #main-chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        background: rgba(5, 8, 15, 0.6);
+        min-width: 0;
+    }
+
+    #chat-nav {
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--surface-glass);
+        backdrop-filter: blur(14px);
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    #back-btn { display: none; }
+
+    /* Top Online Presence Strip */
+    #presence-bar {
+        padding: 8px 16px;
+        background: rgba(10, 15, 26, 0.55);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+    }
+    #presence-bar::-webkit-scrollbar { display: none; }
+
+    .presence-tag {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-right: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .user-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-size: 0.78rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .user-chip:hover {
+        background: rgba(0, 242, 254, 0.15);
+        border-color: var(--accent);
+    }
+    .dot-green {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--online);
+        box-shadow: 0 0 8px var(--online);
+    }
+
+    /* Messages Viewport */
+    #messages-viewport {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+        background-size: 24px 24px;
+    }
+
+    .msg-group {
+        display: flex;
+        flex-direction: column;
+        max-width: 82%;
+    }
+
+    .msg-group.me { align-self: flex-end; align-items: flex-end; }
+    .msg-group.other { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+        padding: 11px 15px;
+        font-size: 0.94rem;
+        line-height: 1.45;
+        word-break: break-word;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+
+    .msg-group.me .bubble {
+        background: linear-gradient(135deg, #00f2fe 0%, #0077ff 100%);
+        color: #030a16;
+        font-weight: 500;
+        border-radius: 18px 18px 4px 18px;
+    }
+
+    .msg-group.other .bubble {
+        background: rgba(22, 33, 54, 0.85);
+        border: 1px solid var(--border);
+        border-radius: 18px 18px 18px 4px;
+    }
+
+    .msg-info {
+        display: flex;
+        gap: 6px;
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 4px;
+        align-items: center;
+    }
+
+    .msg-info .ticks {
+        color: var(--accent);
+        font-size: 0.72rem;
+    }
+
+    .del-btn { color: var(--danger); cursor: pointer; opacity: 0.8; }
+    .del-btn:hover { opacity: 1; }
+
+    /* Typing Animation */
+    .typing-box { display: inline-flex; gap: 4px; padding: 6px 10px; align-items: center; }
+    .typing-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s infinite ease-in-out both; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+    /* Quick Emojis Strip */
+    #quick-emoji-bar {
+        display: flex;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(10, 15, 26, 0.4);
+        border-top: 1px solid var(--border);
+        overflow-x: auto;
+    }
+    .emoji-pill {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.15s;
+    }
+    .emoji-pill:hover { transform: scale(1.2); }
+
+    /* Input Bar */
+    #input-bar {
+        padding: 10px 16px;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.95);
+    }
+
+    .input-box {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.45);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 4px 8px 4px 16px;
+        transition: 0.2s;
+    }
+
+    .input-box:focus-within { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+    #chat-input {
+        flex: 1;
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 0.95rem;
+        outline: none;
+    }
+
+    #send-trigger {
+        background: var(--accent-grad);
+        border: none;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        color: #030a16;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: transform 0.1s;
+    }
+    #send-trigger:active { transform: scale(0.92); }
+
+    /* Sound Switcher */
+    .sound-toggle {
+        font-size: 0.9rem;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 6px;
+    }
+    .sound-toggle.active { color: var(--accent); }
+
+    /* Profile / Settings Modal */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.82);
+        backdrop-filter: blur(8px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+    }
+    .modal-backdrop.active { display: flex; }
+
+    .modal-card {
+        background: #0f172a;
+        border: 1px solid var(--border);
+        padding: 26px;
+        border-radius: 20px;
+        width: 88%;
+        max-width: 350px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .modal-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        margin: 0 auto 14px;
+        object-fit: cover;
+    }
+
+    .modal-card input {
+        width: 100%;
+        padding: 12px;
+        margin: 14px 0;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        text-align: center;
+        font-size: 1rem;
+        outline: none;
+    }
+
+    .modal-card button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        border: none;
+        background: var(--accent-grad);
+        color: #030a16;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    /* Mobile Drawer */
+    #mobile-shade {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.65);
+        z-index: 15;
+        display: none;
+    }
+    #mobile-shade.active { display: block; }
+
+    @media (max-width: 768px) {
+        #sidebar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            transform: translateX(-100%);
+        }
+        #sidebar.open { transform: translateX(0); }
+        #back-btn { display: flex; }
+    }
+</style>
+</head>
+<body>
+
+<!-- WhatsApp-Like In-App Pop Notification -->
+<div id="notif-toast" onclick="handleNotificationClick()">
+    <img id="notif-avatar" src="bloka.png" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Bloka'" style="width:34px;height:34px;border-radius:50%;object-fit:cover;">
+    <div>
+        <div id="notif-sender" style="font-weight:700;font-size:0.82rem;color:var(--accent);">New Message</div>
+        <div id="notif-body" style="font-size:0.75rem;color:#e2e8f0;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">...</div>
+    </div>
+</div>
+
+<div id="app">
+    <div id="mobile-shade" onclick="toggleSidebar(false)"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="sidebar-head">
+            <div class="brand-wrap">
+                <img class="brand-logo" src="bloka.png" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Bloka'" alt="Bloka">
+                <div>
+                    <div class="brand-title">BlokaChat</div>
+                    <div class="brand-sub">Created by Blesson</div>
+                </div>
+            </div>
+            <button class="head-btn" onclick="openProfileModal()"><i class="fas fa-user-gear"></i></button>
+        </div>
+
+        <div id="chat-list">
+            <div class="section-label">Channels</div>
+            <div class="chat-item active" id="room-tab-global" onclick="switchRoom('global')">
+                <div class="avatar-wrap" style="background: rgba(0, 242, 254, 0.15); color: var(--accent);">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">Global Hub</div>
+                    <div style="font-size: 0.72rem; color: var(--muted);">Talk with everyone</div>
+                </div>
+            </div>
+            <div class="chat-item" id="room-tab-ai" onclick="switchRoom('ai')">
+                <div class="avatar-wrap" style="background: rgba(147, 51, 234, 0.18); color: var(--dm-purple);">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">Bloka AI</div>
+                    <div style="font-size: 0.72rem; color: var(--muted);">Direct assistant</div>
+                </div>
+            </div>
+
+            <div class="section-label" style="margin-top: 18px;">Direct Messages</div>
+            <div id="dm-list-container"></div>
+        </div>
+
+        <!-- Sidebar Signature / Credits -->
+        <div class="sidebar-footer">
+            <span>Designed by <b>Blesson</b></span>
+            <span id="sound-indicator" class="sound-toggle active" title="Sound alerts" onclick="toggleSound()"><i class="fas fa-volume-high"></i></span>
+        </div>
+    </div>
+
+    <!-- Main Chat Workspace -->
+    <div id="main-chat">
+        <div id="chat-nav">
+            <div class="nav-left">
+                <button class="head-btn" id="back-btn" onclick="toggleSidebar(true)"><i class="fas fa-bars"></i></button>
+                <div class="avatar-wrap" id="active-avatar" style="background: rgba(0, 242, 254, 0.15); color: var(--accent); width: 36px; height: 36px;">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div>
+                    <h4 id="active-title" style="font-size: 0.98rem; font-weight: 700;">Global Hub</h4>
+                    <div id="active-status" style="font-size: 0.7rem; color: var(--online);">Online</div>
+                </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <button class="head-btn" onclick="toggleSound()"><i id="nav-sound-icon" class="fas fa-volume-high"></i></button>
+                <button class="head-btn" onclick="openProfileModal()"><i class="fas fa-id-badge"></i></button>
+            </div>
+        </div>
+
+        <!-- Online Strip (Tap any user to Direct Message) -->
+        <div id="presence-bar">
+            <span class="presence-tag"><i class="fas fa-users"></i> Online:</span>
+            <div id="presence-users-list" style="display: flex; gap: 8px;"></div>
+        </div>
+
+        <!-- Messages Viewport -->
+        <div id="messages-viewport"></div>
+
+        <!-- Quick Emojis Strip -->
+        <div id="quick-emoji-bar">
+            <span class="emoji-pill" onclick="insertEmoji('👍')">👍</span>
+            <span class="emoji-pill" onclick="insertEmoji('❤️')">❤️</span>
+            <span class="emoji-pill" onclick="insertEmoji('🔥')">🔥</span>
+            <span class="emoji-pill" onclick="insertEmoji('😂')">😂</span>
+            <span class="emoji-pill" onclick="insertEmoji('👋')">👋</span>
+            <span class="emoji-pill" onclick="insertEmoji('🎉')">🎉</span>
+        </div>
+
+        <!-- Bottom Input Bar -->
+        <div id="input-bar">
+            <div class="input-box">
+                <input type="text" id="chat-input" placeholder="Type a message or @bloka..." autocomplete="off">
+                <button id="send-trigger" onclick="handleSend()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-backdrop" id="user-modal">
+    <div class="modal-card">
+        <img class="modal-logo" src="bloka.png" onerror="this.src='https://api.dicebear.com/7.x/bottts/svg?seed=Bloka'" alt="Bloka">
+        <h3>Welcome to BlokaChat</h3>
+        <p style="font-size: 0.78rem; color: var(--muted); margin-top: 4px;">Created by Blesson · Enter your name to chat</p>
+        <input type="text" id="display-name-field" maxlength="14" placeholder="Enter your display name">
+        <button onclick="saveProfileName()">Connect & Join</button>
+    </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyAa7ApnPSskDeHJCFfjMLhT5FAnYWL0TsQ",
+        authDomain: "bloka-11874.firebaseapp.com",
+        databaseURL: "https://bloka-11874-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "bloka-11874",
+        storageBucket: "bloka-11874.firebasestorage.app",
+        messagingSenderId: "837660467202",
+        appId: "1:837660467202:web:ba38a37e2d217a4e42c71b"
+    };
+
+    const GROQ_API_KEY = "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";
+    const ACTIVE_MODEL = "openai/gpt-oss-20b";
+
+    let db = null;
+    try {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+    } catch(err) {
+        console.warn("Firebase Init Error:", err);
+    }
+
+    let myUid = localStorage.getItem('bloka_uid') || ('u_' + Math.random().toString(36).substr(2, 9));
+    localStorage.setItem('bloka_uid', myUid);
+
+    let myName = localStorage.getItem('bloka_user') || '';
+    let soundEnabled = localStorage.getItem('bloka_sound') !== 'false';
+    let currentRoom = 'global';
+    let currentRoomName = 'Global Hub';
+    let currentRoomListener = null;
+    let onlineUsers = {};
+    let pendingNotifRoom = null;
+
+    const viewport = document.getElementById('messages-viewport');
+    const input = document.getElementById('chat-input');
+    const presenceList = document.getElementById('presence-users-list');
+    const dmContainer = document.getElementById('dm-list-container');
+
+    /* =========================================================================
+       SYNTHESIZED WHATSAPP-STYLE SOUND EFFECTS (Zero-Dependency Web Audio API)
+       ========================================================================= */
+    let audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        return audioCtx;
+    }
+
+    function playSendSound() {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(580, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(960, ctx.currentTime + 0.09);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.14);
+        } catch(e) {}
+    }
+
+    function playReceiveSound() {
+        if (!soundEnabled) return;
+        try {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            // Classic WhatsApp dual-tone incoming chime
+            const osc1 = ctx.createOscillator();
+            const osc2 = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc1.type = 'sine';
+            osc2.type = 'sine';
+
+            osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5
+            osc1.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.08); // D6
+
+            osc2.frequency.setValueAtTime(440, ctx.currentTime);
+            osc2.frequency.setValueAtTime(587.33, ctx.currentTime + 0.08);
+
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
+
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc1.start();
+            osc2.start();
+            osc1.stop(ctx.currentTime + 0.38);
+            osc2.stop(ctx.currentTime + 0.38);
+        } catch(e) {}
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('bloka_sound', soundEnabled ? 'true' : 'false');
+        updateSoundIcons();
+    }
+
+    function updateSoundIcons() {
+        const iconClass = soundEnabled ? 'fa-volume-high' : 'fa-volume-xmark';
+        document.getElementById('nav-sound-icon').className = 'fas ' + iconClass;
+        document.getElementById('sound-indicator').className = 'sound-toggle ' + (soundEnabled ? 'active' : '');
+        document.getElementById('sound-indicator').innerHTML = `<i class="fas ${iconClass}"></i>`;
+    }
+
+    /* --- WhatsApp-Style Floating In-App Banner Notification --- */
+    let notifTimer = null;
+    function triggerBannerNotification(senderName, text, targetRoom) {
+        const banner = document.getElementById('notif-toast');
+        document.getElementById('notif-sender').textContent = senderName;
+        document.getElementById('notif-body').textContent = text;
+        pendingNotifRoom = targetRoom;
+
+        banner.classList.add('show');
+        clearTimeout(notifTimer);
+        notifTimer = setTimeout(() => {
+            banner.classList.remove('show');
+        }, 4500);
+    }
+
+    function handleNotificationClick() {
+        document.getElementById('notif-toast').classList.remove('show');
+        if (pendingNotifRoom && pendingNotifRoom !== currentRoom) {
+            switchRoom(pendingNotifRoom);
+        }
+    }
+
+    /* --- App Lifecycle --- */
+    window.addEventListener('DOMContentLoaded', () => {
+        updateSoundIcons();
+
+        // Unlock AudioContext on first touch / click
+        const unlockAudio = () => {
+            getAudioCtx();
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+        };
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('touchstart', unlockAudio);
+
+        if (!myName) {
+            openProfileModal();
+        } else {
+            startChat();
+        }
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+    });
+
+    function toggleSidebar(open) {
+        const sb = document.getElementById('sidebar');
+        const shade = document.getElementById('mobile-shade');
+        if (open) {
+            sb.classList.add('open');
+            shade.classList.add('active');
+        } else {
+            sb.classList.remove('open');
+            shade.classList.remove('active');
+        }
+    }
+
+    function openProfileModal() {
+        document.getElementById('user-modal').classList.add('active');
+        if (myName) document.getElementById('display-name-field').value = myName;
+    }
+
+    function saveProfileName() {
+        const val = document.getElementById('display-name-field').value.trim();
+        if (!val) return;
+        myName = val;
+        localStorage.setItem('bloka_user', myName);
+        document.getElementById('user-modal').classList.remove('active');
+        startChat();
+    }
+
+    function insertEmoji(char) {
+        input.value += char;
+        input.focus();
+    }
+
+    function startChat() {
+        setupPresence();
+        switchRoom('global');
+    }
+
+    /* --- Deterministic 1-on-1 Direct Messaging Room ID --- */
+    function getDmRoomId(idA, idB) {
+        return 'dm_' + [idA, idB].sort().join('_');
+    }
+
+    function openDirectMessage(targetUid, targetName) {
+        if (targetUid === myUid) return;
+        const roomId = getDmRoomId(myUid, targetUid);
+        switchRoom(roomId, targetName);
+    }
+
+    function switchRoom(roomId, customName) {
+        currentRoom = roomId;
+        document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+
+        const title = document.getElementById('active-title');
+        const icon = document.getElementById('active-avatar');
+        const bar = document.getElementById('presence-bar');
+
+        if (roomId === 'global') {
+            currentRoomName = 'Global Hub';
+            title.innerText = currentRoomName;
+            icon.style.background = "rgba(0, 242, 254, 0.15)";
+            icon.style.color = "var(--accent)";
+            icon.innerHTML = '<i class="fas fa-globe"></i>';
+            bar.style.display = "flex";
+            input.placeholder = "Message everyone (type @bloka for AI)...";
+            document.getElementById('room-tab-global').classList.add('active');
+        } else if (roomId === 'ai') {
+            currentRoomName = 'Bloka AI';
+            title.innerText = currentRoomName;
+            icon.style.background = "rgba(147, 51, 234, 0.18)";
+            icon.style.color = "var(--dm-purple)";
+            icon.innerHTML = '<i class="fas fa-robot"></i>';
+            bar.style.display = "none";
+            input.placeholder = "Ask Bloka AI directly...";
+            document.getElementById('room-tab-ai').classList.add('active');
+        } else {
+            currentRoomName = customName || 'Direct Message';
+            title.innerHTML = `<i class="fas fa-lock" style="color:var(--dm-purple); font-size:0.8rem;"></i> ${escapeHtml(currentRoomName)}`;
+            icon.style.background = "rgba(192, 132, 252, 0.18)";
+            icon.style.color = "var(--dm-purple)";
+            icon.innerHTML = '<i class="fas fa-user"></i>';
+            bar.style.display = "none";
+            input.placeholder = `Message ${currentRoomName}...`;
+            const tab = document.getElementById('dm-tab-' + roomId);
+            if (tab) tab.classList.add('active');
+        }
+
+        toggleSidebar(false);
+        bindRoom(roomId);
+    }
+
+    /* --- Online Presence Sync --- */
+    function setupPresence() {
+        if (!db || !myUid || !myName) return;
+
+        const myRef = db.ref(`presence/${myUid}`);
+        const connectedRef = db.ref('.info/connected');
+
+        connectedRef.on('value', snap => {
+            if (snap.val() === true) {
+                myRef.onDisconnect().remove();
+                myRef.set({
+                    uid: myUid,
+                    name: myName,
+                    time: Date.now()
+                });
+            }
+        });
+
+        db.ref('presence').on('value', snap => {
+            onlineUsers = snap.val() || {};
+            renderPresenceUI();
+        });
+    }
+
+    function renderPresenceUI() {
+        presenceList.innerHTML = '';
+        dmContainer.innerHTML = '';
+
+        // Self badge
+        const selfTag = document.createElement('span');
+        selfTag.className = 'user-chip';
+        selfTag.innerHTML = `<span class="dot-green"></span> ${escapeHtml(myName)} (You)`;
+        presenceList.appendChild(selfTag);
+
+        const keys = Object.keys(onlineUsers);
+        keys.forEach(uid => {
+            if (uid === myUid) return;
+            const u = onlineUsers[uid];
+            if (!u || !u.name) return;
+
+            // Top presence chip
+            const chip = document.createElement('span');
+            chip.className = 'user-chip';
+            chip.innerHTML = `<span class="dot-green"></span> ${escapeHtml(u.name)}`;
+            chip.onclick = () => openDirectMessage(uid, u.name);
+            presenceList.appendChild(chip);
+
+            // Sidebar DM entry
+            const dmRoomId = getDmRoomId(myUid, uid);
+            const item = document.createElement('div');
+            item.id = 'dm-tab-' + dmRoomId;
+            item.className = `chat-item ${currentRoom === dmRoomId ? 'active' : ''}`;
+            item.innerHTML = `
+                <div class="avatar-wrap" style="background: rgba(192, 132, 252, 0.15); color: var(--dm-purple);">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.95rem;">${escapeHtml(u.name)}</div>
+                    <div style="font-size: 0.72rem; color: var(--online);"><span class="dot-green" style="display:inline-block; vertical-align:middle;"></span> Online</div>
+                </div>
+            `;
+            item.onclick = () => openDirectMessage(uid, u.name);
+            dmContainer.appendChild(item);
+        });
+
+        if (keys.length <= 1) {
+            dmContainer.innerHTML = `<div style="font-size:0.75rem; color:var(--muted); padding:10px 12px;">Open BlokaChat on your phone or in another tab to chat!</div>`;
+        }
+    }
+
+    /* --- Realtime Room Data Binding --- */
+    function bindRoom(roomId) {
+        viewport.innerHTML = '';
+
+        if (currentRoomListener) {
+            currentRoomListener.off();
+            currentRoomListener = null;
+        }
+
+        if (roomId === 'ai') {
+            renderMessageBubble({
+                id: 'ai_welcome',
+                sender: 'Bloka AI',
+                text: `Hey ${myName}! I am Bloka AI, ready to help you with code, answers, or quick solutions.`,
+                timestamp: Date.now()
+            });
+            return;
+        }
+
+        if (db) {
+            let initialLoad = true;
+            currentRoomListener = db.ref(`chats/${roomId}`).limitToLast(60);
+
+            currentRoomListener.on('child_added', snap => {
+                const data = snap.val();
+                if (data && !document.getElementById(snap.key)) {
+                    renderMessageBubble({ id: snap.key, ...data });
+
+                    // Sound and Notification for incoming messages
+                    const isOther = (data.uid && data.uid !== myUid) && (data.sender !== myName);
+                    if (isOther) {
+                        playReceiveSound();
+                        if (!initialLoad) {
+                            triggerBannerNotification(data.sender, data.text, roomId);
+                        }
+                    }
+                }
+            });
+
+            // Flip initial load flag after history is populated
+            setTimeout(() => { initialLoad = false; }, 1200);
+
+            db.ref(`chats/${roomId}`).on('child_removed', snap => {
+                const node = document.getElementById(snap.key);
+                if (node) node.remove();
+            });
+        }
+    }
+
+    function renderMessageBubble(msg) {
+        if (document.getElementById(msg.id)) return;
+
+        const isMe = (msg.uid && msg.uid === myUid) || msg.sender === myName;
+        const time = new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const group = document.createElement('div');
+        group.id = msg.id;
+        group.className = `msg-group ${isMe ? 'me' : 'other'}`;
+
+        const isAi = msg.sender.includes('Bloka');
+        const senderColor = isAi ? 'var(--accent)' : (currentRoom.startsWith('dm_') ? 'var(--dm-purple)' : 'var(--accent)');
+
+        group.innerHTML = `
+            <div class="bubble">${escapeHtml(msg.text)}</div>
+            <div class="msg-info">
+                ${!isMe ? `<b style="color:${senderColor}">${escapeHtml(msg.sender)}</b>` : ''}
+                <span>${time}</span>
+                ${isMe ? `<span class="ticks"><i class="fas fa-check-double"></i></span>` : ''}
+                ${isMe ? `<span class="del-btn" onclick="removeMessage('${msg.id}')"><i class="fas fa-trash-can"></i></span>` : ''}
+            </div>
+        `;
+
+        viewport.appendChild(group);
+        viewport.scrollTop = viewport.scrollHeight;
+    }
+
+    async function handleSend() {
+        const text = input.value.trim();
+        if (!text) return;
+        if (!myName) { openProfileModal(); return; }
+
+        input.value = '';
+        playSendSound();
+
+        if (currentRoom === 'ai') {
+            renderMessageBubble({
+                id: 'local_' + Date.now(),
+                uid: myUid,
+                sender: myName,
+                text: text,
+                timestamp: Date.now()
+            });
+            await fetchGroqAI(text);
+            return;
+        }
+
+        // Shared Firebase Rooms (Global or DM)
+        if (db) {
+            const newRef = db.ref(`chats/${currentRoom}`).push();
+            const payload = {
+                uid: myUid,
+                sender: myName,
+                text: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            newRef.set(payload).catch(e => {
+                renderMessageBubble({ id: 'loc_' + Date.now(), ...payload });
+            });
+        }
+
+        if (currentRoom === 'global' && text.toLowerCase().includes('@bloka')) {
+            await fetchGroqAI(text);
+        }
+    }
+
+    function removeMessage(id) {
+        const node = document.getElementById(id);
+        if (node) node.remove();
+        if (db && currentRoom !== 'ai') {
+            db.ref(`chats/${currentRoom}/${id}`).remove().catch(() => {});
+        }
+    }
+
+    /* --- Groq AI Assistant (Thinking Filtered) --- */
+    async function fetchGroqAI(promptText) {
+        const typingId = 'typing_' + Date.now();
+        const typingBox = document.createElement('div');
+        typingBox.id = typingId;
+        typingBox.className = 'msg-group other';
+        typingBox.innerHTML = `
+            <div class="bubble">
+                <div class="typing-box">
+                    <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+                </div>
+            </div>
+            <div class="msg-info"><b style="color:var(--accent)">Bloka AI</b> thinking...</div>
+        `;
+        viewport.appendChild(typingBox);
+        viewport.scrollTop = viewport.scrollHeight;
+
+        try {
+            const cleanQuery = promptText.replace(/@bloka/gi, '').trim();
+
+            const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: ACTIVE_MODEL,
+                    messages: [
+                        { role: "system", content: "You are Bloka, a swift, witty AI companion in BlokaChat created by Blesson. Give direct, crisp answers under 3 sentences without conversational filler." },
+                        { role: "user", content: cleanQuery }
+                    ],
+                    max_tokens: 350
+                })
+            });
+
+            const data = await res.json();
+            const typingNode = document.getElementById(typingId);
+            if (typingNode) typingNode.remove();
+
+            if (!res.ok) throw new Error(data.error?.message || `HTTP ${res.status}`);
+
+            let replyText = data.choices?.[0]?.message?.content || "";
+
+            // Strip any <think> tags from reasoning models
+            replyText = replyText.replace(/<think>[\s\S]*?<\/think>/gi, '');
+            replyText = replyText.replace(/<think>[\s\S]*/gi, '').trim();
+
+            if (!replyText) replyText = "I'm ready! How can I help you today?";
+
+            playReceiveSound();
+
+            if (currentRoom === 'global' && db) {
+                const aiRef = db.ref(`chats/${currentRoom}`).push();
+                aiRef.set({
+                    uid: 'ai_bot',
+                    sender: 'Bloka AI',
+                    text: replyText,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+            } else {
+                renderMessageBubble({
+                    id: 'ai_' + Date.now(),
+                    uid: 'ai_bot',
+                    sender: 'Bloka AI',
+                    text: replyText,
+                    timestamp: Date.now()
+                });
+            }
+
+        } catch (error) {
+            const typingNode = document.getElementById(typingId);
+            if (typingNode) typingNode.remove();
+
+            renderMessageBubble({
+                id: 'err_' + Date.now(),
+                sender: 'Bloka AI',
+                text: `Notice: ${error.message}`,
+                timestamp: Date.now()
+            });
+        }
+    }
+
+    function escapeHtml(str) {
+        return (str || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+</script>
+</body>
+</html>
